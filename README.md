@@ -7,11 +7,23 @@ spyhop auth login | status | logout
 spyhop tools [name]
 spyhop call <tool> --arg key=value ... [--raw]
 spyhop search "critical alerts in progress" [--limit 5]
-spyhop alert get <id> | alert status <id> --to open|in_progress|closed|snoozed|dismissed
+spyhop alert get <id|->            # - reads IDs from stdin
+spyhop alert timeline|attack-path <id>
+spyhop alert similar <id> --by type|malware|secret [--secret-hash H]
+spyhop alert status <id> --to open|in_progress|closed|snoozed|dismissed --yes
+spyhop alert comment <id> --body TEXT --yes
+spyhop alert snooze <id> --days N [--reason R] [--justification T] --yes
+spyhop alert dismiss <id> [--reason R] [--justification T] --yes
+spyhop alert score <id> --score 0-10 [--reason R] [--justification T] --yes
+spyhop alert verify <id> --yes
 spyhop asset get <id> [--model-type AwsEc2Instance]
 ```
 
 `--json` prints curated JSON; `--raw` prints the MCP result text unchanged.
+
+## Alert writes need `--yes`
+
+`status`, `comment`, `snooze`, `dismiss`, `score` and `verify` change the tenant. Without `--yes` nothing is sent: stdout gets `{"tool":...,"args":...}`, stderr says `pass --yes to execute`, and the exit code is 2. With `--yes` the unwrapped result prints (as with `call`). `--reason` matches the tool's enum case-insensitively and is sent in canonical form; completion offers the values. `alert status` used to execute without `--yes`.
 
 ## Composition
 

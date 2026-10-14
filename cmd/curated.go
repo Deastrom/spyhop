@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bufio"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -195,32 +194,7 @@ func (a *App) searchCmd(o *opts) *cobra.Command {
 				}
 				return nil
 			}
-			rows := make([]format.Curated, len(env.Records))
-			for i, r := range env.Records {
-				if len(v.fields) > 0 {
-					rows[i] = format.Select(r, v.fields)
-				} else {
-					rows[i] = format.SearchRow(r)
-				}
-			}
-			switch v.format {
-			case "json":
-				parts := make([]string, len(rows))
-				for i, r := range rows {
-					parts[i] = r.JSON()
-				}
-				fmt.Fprintln(a.Out, "["+strings.Join(parts, ",")+"]")
-			case "tsv":
-				fmt.Fprint(a.Out, format.TSV(v.fields, rows))
-			default:
-				for _, r := range rows {
-					fmt.Fprintln(a.Out, r.Line())
-				}
-				fmt.Fprintf(a.Out, "total_items: %d\n", env.Total)
-				if env.AppURL != "" {
-					fmt.Fprintf(a.Out, "app_url: %s\n", env.AppURL)
-				}
-			}
+			a.printSearch(v, env)
 			return nil
 		},
 	}
@@ -229,46 +203,42 @@ func (a *App) searchCmd(o *opts) *cobra.Command {
 	return c
 }
 
+// printSearch renders search-style rows: text lines plus footer, JSON array,
+// or TSV.
+func (a *App) printSearch(v view, env *format.Envelope) {
+	rows := make([]format.Curated, len(env.Records))
+	for i, r := range env.Records {
+		if len(v.fields) > 0 {
+			rows[i] = format.Select(r, v.fields)
+		} else {
+			rows[i] = format.SearchRow(r)
+		}
+	}
+	switch v.format {
+	case "json":
+		parts := make([]string, len(rows))
+		for i, r := range rows {
+			parts[i] = r.JSON()
+		}
+		fmt.Fprintln(a.Out, "["+strings.Join(parts, ",")+"]")
+	case "tsv":
+		fmt.Fprint(a.Out, format.TSV(v.fields, rows))
+	default:
+		for _, r := range rows {
+			fmt.Fprintln(a.Out, r.Line())
+		}
+		fmt.Fprintf(a.Out, "total_items: %d\n", env.Total)
+		if env.AppURL != "" {
+			fmt.Fprintf(a.Out, "app_url: %s\n", env.AppURL)
+		}
+	}
+}
+
 func (a *App) alertCmd(o *opts) *cobra.Command {
 	c := &cobra.Command{Use: "alert", Short: "Alert lookups and workflow"}
 	get := a.getCmd(o, "get <alert-id|->", "Curated alert summary (get_alert); - reads IDs from stdin", "alert", "get_alert", "alert_id", nil, format.Alert)
-	var to string
-	status := &cobra.Command{
-		Use:   "status <alert-id> --to <status>",
-		Short: "Set alert status (update_alert_status)",
-		Args:  positional(cobra.ExactArgs(1)),
-		RunE: func(_ *cobra.Command, args []string) error {
-			if args[0] == "-" {
-				return usagef("alert status takes one alert ID")
-			}
-			valid := false
-			for _, s := range alertStatuses {
-				valid = valid || s == to
-			}
-			if !valid {
-				return usagef("--to %q invalid; allowed: %s", to, strings.Join(alertStatuses, ", "))
-			}
-			res, err := a.callTool(o, "update_alert_status", map[string]any{"alert_id": args[0], "status": to})
-			if err != nil {
-				return err
-			}
-			if o.raw {
-				fmt.Fprintln(a.Out, mcp.TextContent(res))
-				return nil
-			}
-			if o.json {
-				b, _ := json.Marshal(map[string]any{"alert_id": args[0], "status": to})
-				fmt.Fprintln(a.Out, string(b))
-				return nil
-			}
-			fmt.Fprintf(a.Out, "%s: %s\n", args[0], to)
-			return nil
-		},
-	}
-	status.Flags().StringVar(&to, "to", "", "New status: "+strings.Join(alertStatuses, ", "))
-	_ = status.RegisterFlagCompletionFunc("to", fixedValues(alertStatuses...))
-	_ = status.MarkFlagRequired("to")
-	c.AddCommand(get, status)
+	c.AddCommand(get)
+	c.AddCommand(a.lifecycleCmds(o)...)
 	return c
 }
 

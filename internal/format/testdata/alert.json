@@ -8,6 +8,8 @@
 "CveIds":{"value":["CVE-2099-0001"]},
 "Labels":{"value":["fix_available","remote_code_execution"]},
 "AssetData":{"value":{"asset_name":"synthetic-vm-01","asset_type":"AwsEc2Instance","account_name":"synthetic-account","asset_tags_info_list":["Team|Synthetic","Env|Test"]}},
+"RuleType":{"value":"trending_cve"},
+"Inventory":{"id":"u-1","name":"synthetic-vm-01","type":"AwsEc2Instance","data":{}},
 "Recommendation":{"value":"Upgrade synthetic-lib to 2.0.0."},
 "Description":{"value":"A long description that curated output must not print."},
 "ScoreVector":{"value":{"AlertBaseScore":{"score":9.9,"Features":[{"score":0.5,"value":"x"}]}}},

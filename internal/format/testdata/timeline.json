@@ -1,0 +1,4 @@
+{"event_log":[
+{"create_time":"2026-01-02T03:04:05Z","type":"alert_created","details":{"description":"Alert created"},"user_email":null},
+{"create_time":"2026-01-03T10:00:00Z","type":"score_change","details":{"description":"Score changed","from":8.5,"to":9.7},"user_email":"analyst@example.invalid"}
+]}

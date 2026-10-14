@@ -105,14 +105,14 @@ func TestAlertStatus(t *testing.T) {
 	t.Run("given --to in_progress", func(t *testing.T) {
 		f := newFakeMCP(t)
 		f.Reply = `{"status":"success","data":[],"total_items":0}`
-		r := spyhop(t, f, "alert", "status", "orca-1234", "--to", "in_progress")
+		r := spyhop(t, f, "alert", "status", "orca-1234", "--to", "in_progress", "--yes")
 		t.Run("then it calls update_alert_status and prints the new status", func(t *testing.T) {
 			got := struct {
 				Run  run
 				Call mcp.ToolCallParams
 			}{r, f.Calls[0]}
 			want := got
-			want.Run = run{0, "orca-1234: in_progress\n", ""}
+			want.Run = run{0, `{"data":[],"status":"success","total_items":0}` + "\n", ""}
 			want.Call = mcp.ToolCallParams{Name: "update_alert_status", Arguments: map[string]any{"alert_id": "orca-1234", "status": "in_progress"}}
 			if !equalJSON(got, want) {
 				t.Fatalf("got %+v, want %+v", got, want)
