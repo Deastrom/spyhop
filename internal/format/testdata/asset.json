@@ -7,7 +7,6 @@
 "Region":{"value":"us-east-2"},
 "Exposure":{"value":"internet_facing"},
 "IsCrownJewel":{"value":true},
-"AccountName":{"value":"synthetic-account"},
 "TotalVulnerabilitiesFound":{"value":42},
 "RelatedCompliances":{"value":["Framework A","Framework B"]},
 "Tags":{"value":{"Name":"synthetic-vm-01"}}

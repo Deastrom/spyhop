@@ -66,7 +66,6 @@ State: running
 Region: us-east-2
 Exposure: internet_facing
 IsCrownJewel: true
-Account: synthetic-account
 TotalVulnerabilitiesFound: 42
 ui_url: https://app.example.invalid/inventory/a1
 `
@@ -80,7 +79,7 @@ func TestSearchRows(t *testing.T) {
 	got := []string{format.SearchRow(env.Records[0]).Line(), format.SearchRow(env.Records[1]).Line()}
 	want := []string{
 		"Alert | orca-1234 | critical | 9.7 | in_progress | Remote code execution in synthetic-lib | synthetic-vm-01",
-		"AwsEc2Instance | synthetic-vm-01 | critical | synthetic-account",
+		"AwsEc2Instance | 00000000-0000-0000-0000-0000000000a1 | synthetic-vm-01 | critical",
 	}
 	if got[0] != want[0] || got[1] != want[1] {
 		t.Fatalf("got %q, want %q", got, want)

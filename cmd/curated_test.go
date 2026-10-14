@@ -31,7 +31,7 @@ func TestSearch(t *testing.T) {
 				}{r, f.Calls[0]}
 				want := got
 				want.Run = run{0, `Alert | orca-1234 | critical | 9.7 | in_progress | Remote code execution in synthetic-lib | synthetic-vm-01
-AwsEc2Instance | synthetic-vm-01 | critical | synthetic-account
+AwsEc2Instance | 00000000-0000-0000-0000-0000000000a1 | synthetic-vm-01 | critical
 total_items: 716
 app_url: https://app.example.invalid/discovery?data=synthetic
 `, ""}

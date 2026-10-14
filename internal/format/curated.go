@@ -149,7 +149,7 @@ func Asset(r Record) Curated {
 	var c Curated
 	for _, p := range [][2]string{{"Name", "Name"}, {"Type", "Type"}, {"RiskLevel", "RiskLevel"}, {"OrcaScore", "OrcaScore"},
 		{"State", "State"}, {"Region", "Region"}, {"Exposure", "Exposure"}, {"IsCrownJewel", "IsCrownJewel"},
-		{"Account", "AccountName"}, {"TotalVulnerabilitiesFound", "TotalVulnerabilitiesFound"}} {
+		{"TotalVulnerabilitiesFound", "TotalVulnerabilitiesFound"}} {
 		c = c.pick(r, p[0], p[1])
 	}
 	return c.add("ui_url", r.UIURL)
@@ -168,7 +168,6 @@ func SearchRow(r Record) Curated {
 	if n, ok := r.Fields["Name"].(string); ok && n != "" {
 		name = n
 	}
-	c = c.add("name", name)
-	c = c.pick(r, "RiskLevel", "RiskLevel")
-	return c.pick(r, "account", "AccountName")
+	c = c.add("id", r.ID).add("name", name)
+	return c.pick(r, "RiskLevel", "RiskLevel")
 }
