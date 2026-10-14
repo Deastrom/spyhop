@@ -12,5 +12,5 @@ var version = "dev"
 
 func main() {
 	mcp.Version = version
-	os.Exit(cmd.ExitCode(&cmd.App{Out: os.Stdout, Err: os.Stderr, Getenv: os.Getenv, Version: version}, os.Args[1:]))
+	os.Exit(cmd.ExitCode(&cmd.App{Out: os.Stdout, Err: os.Stderr, In: os.Stdin, Getenv: os.Getenv, Version: version}, os.Args[1:]))
 }

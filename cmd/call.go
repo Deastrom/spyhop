@@ -15,7 +15,7 @@ func (a *App) callCmd(o *opts) *cobra.Command {
 	c := &cobra.Command{
 		Use:   "call <tool> [--arg key=value ...]",
 		Short: "Call any Orca MCP tool by name",
-		Args:  cobra.ExactArgs(1),
+		Args:  positional(cobra.ExactArgs(1)),
 		RunE: func(_ *cobra.Command, args []string) error {
 			toolArgs := map[string]any{}
 			for _, p := range kv {

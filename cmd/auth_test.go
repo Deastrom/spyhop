@@ -15,7 +15,7 @@ func TestBadRegion(t *testing.T) {
 	r := spyhopEnv(t, map[string]string{}, "--region", "xx", "tools")
 	got := run{r.Code, "", ""}
 	got.Err = map[bool]string{true: "lists", false: r.Err}[strings.Contains(r.Err, "us, eu, au, in, sa")]
-	if want := (run{1, "", "lists"}); got != want {
+	if want := (run{2, "", "lists"}); got != want {
 		t.Fatalf("got %+v (stderr %q), want %+v", got, r.Err, want)
 	}
 }

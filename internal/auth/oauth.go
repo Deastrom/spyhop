@@ -231,7 +231,7 @@ func EnsureValid(t *Tokens) (*Tokens, bool, error) {
 		return t, false, nil
 	}
 	if t.RefreshToken == "" {
-		return nil, false, fmt.Errorf("access token expired and no refresh token; %s", loginHint)
+		return nil, false, fmt.Errorf("%w: access token expired and no refresh token; %s", ErrUnauthorized, loginHint)
 	}
 	n, err := tokenRequest(t.TokenEndpoint, url.Values{
 		"grant_type":    {"refresh_token"},
@@ -240,7 +240,7 @@ func EnsureValid(t *Tokens) (*Tokens, bool, error) {
 		"resource":      {t.Resource},
 	})
 	if err != nil {
-		return nil, false, fmt.Errorf("token refresh failed; %s: %w", loginHint, err)
+		return nil, false, fmt.Errorf("%w: token refresh failed; %s: %v", ErrUnauthorized, loginHint, err)
 	}
 	n.ClientID, n.Resource, n.TokenEndpoint, n.RevocationEndpoint = t.ClientID, t.Resource, t.TokenEndpoint, t.RevocationEndpoint
 	if n.RefreshToken == "" {

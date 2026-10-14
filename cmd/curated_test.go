@@ -59,7 +59,7 @@ func TestSearchLimitBounds(t *testing.T) {
 			f := fixtureServer(t, "search.json")
 			t.Run("when search runs", func(t *testing.T) {
 				r := spyhop(t, f, "search", "x", "--limit", lim)
-				t.Run("then it exits 1 before calling the server", func(t *testing.T) {
+				t.Run("then it exits 2 before calling the server", func(t *testing.T) {
 					got := struct {
 						Code  int
 						Calls int
@@ -67,7 +67,7 @@ func TestSearchLimitBounds(t *testing.T) {
 					if got != (struct {
 						Code  int
 						Calls int
-					}{1, 0}) {
+					}{2, 0}) {
 						t.Fatalf("got %+v, stderr %q", got, r.Err)
 					}
 				})
@@ -122,8 +122,8 @@ func TestAlertStatus(t *testing.T) {
 	t.Run("given --to outside D12", func(t *testing.T) {
 		f := newFakeMCP(t)
 		r := spyhop(t, f, "alert", "status", "orca-1234", "--to", "resolved")
-		t.Run("then it exits 1 before calling", func(t *testing.T) {
-			if r.Code != 1 || len(f.Calls) != 0 || !strings.Contains(r.Err, "open, in_progress, closed, snoozed, dismissed") {
+		t.Run("then it exits 2 before calling", func(t *testing.T) {
+			if r.Code != 2 || len(f.Calls) != 0 || !strings.Contains(r.Err, "open, in_progress, closed, snoozed, dismissed") {
 				t.Fatalf("got %+v calls=%d", r, len(f.Calls))
 			}
 		})

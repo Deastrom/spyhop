@@ -94,6 +94,9 @@ func scalar(v any) string {
 			parts[i] = scalar(e)
 		}
 		return strings.Join(parts, ",")
+	case map[string]any:
+		b, _ := json.Marshal(t)
+		return string(b)
 	}
 	return fmt.Sprint(v)
 }
@@ -170,4 +173,75 @@ func SearchRow(r Record) Curated {
 	}
 	c = c.add("id", r.ID).add("name", name)
 	return c.pick(r, "RiskLevel", "RiskLevel")
+}
+
+// Select picks the named top-level fields in the order given; names that are
+// absent or empty are omitted.
+func Select(r Record, fields []string) Curated {
+	var c Curated
+	for _, k := range fields {
+		c = c.pick(r, k, k)
+	}
+	return c
+}
+
+// ID returns the identifier `asset get` and `alert get` accept: AlertId for
+// alerts, AssetUniqueId otherwise. Empty when the record lacks it.
+func ID(r Record) string {
+	key := "AssetUniqueId"
+	if r.Type == "Alert" {
+		key = "AlertId"
+	}
+	s, _ := r.Fields[key].(string)
+	return s
+}
+
+// JSON renders the fields as one compact object, keeping their order.
+func (c Curated) JSON() string {
+	var sb strings.Builder
+	sb.WriteByte('{')
+	for i, f := range c {
+		if i > 0 {
+			sb.WriteByte(',')
+		}
+		k, _ := json.Marshal(f.Key)
+		v, _ := json.Marshal(f.Value)
+		sb.Write(k)
+		sb.WriteByte(':')
+		sb.Write(v)
+	}
+	sb.WriteByte('}')
+	return sb.String()
+}
+
+var tsvCell = strings.NewReplacer("\t", " ", "\n", " ", "\r", " ")
+
+// TSV renders a header row and one row per record. columns nil means the
+// union of keys in first-seen order. Missing values are empty cells.
+func TSV(columns []string, rows []Curated) string {
+	if columns == nil {
+		seen := map[string]bool{}
+		for _, r := range rows {
+			for _, f := range r {
+				if !seen[f.Key] {
+					seen[f.Key] = true
+					columns = append(columns, f.Key)
+				}
+			}
+		}
+	}
+	var sb strings.Builder
+	sb.WriteString(strings.Join(columns, "\t") + "\n")
+	for _, r := range rows {
+		cells := make([]string, len(columns))
+		for i, col := range columns {
+			for _, f := range r {
+				if f.Key == col {
+					cells[i] = tsvCell.Replace(scalar(f.Value))
+				}
+			}
+		}
+		sb.WriteString(strings.Join(cells, "\t") + "\n")
+	}
+	return sb.String()
 }

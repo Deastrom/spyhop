@@ -4,6 +4,7 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -24,6 +25,12 @@ const (
 
 	loginHint = "run: spyhop auth login"
 )
+
+// ErrUnauthorized marks failures fixed by logging in again (exit code 4).
+var ErrUnauthorized = errors.New("not authenticated")
+
+// ErrInvalidRegion marks a region outside the supported set (usage error).
+var ErrInvalidRegion = errors.New("invalid region")
 
 var regions = []string{"us", "eu", "au", "in", "sa"}
 
@@ -65,7 +72,7 @@ func MakePlan(getenv func(string) string, regionFlag string) (*Plan, error) {
 		valid = valid || r == region
 	}
 	if !valid {
-		return nil, fmt.Errorf("invalid region %q; valid regions: %s", region, strings.Join(regions, ", "))
+		return nil, fmt.Errorf("%w %q; valid regions: %s", ErrInvalidRegion, region, strings.Join(regions, ", "))
 	}
 	override := getenv(envEndpoint)
 	if tok := getenv(envToken); tok != "" {
@@ -101,7 +108,7 @@ func Resolve(getenv func(string) string, regionFlag string) (*Session, error) {
 		return nil, err
 	}
 	if t == nil {
-		return nil, fmt.Errorf("not authenticated; %s", loginHint)
+		return nil, fmt.Errorf("%w; %s", ErrUnauthorized, loginHint)
 	}
 	t, refreshed, err := EnsureValid(t)
 	if err != nil {

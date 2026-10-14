@@ -12,7 +12,7 @@ func (a *App) toolsCmd(o *opts) *cobra.Command {
 	return &cobra.Command{
 		Use:   "tools [name]",
 		Short: "List tools, or print one tool's input schema",
-		Args:  cobra.MaximumNArgs(1),
+		Args:  positional(cobra.MaximumNArgs(1)),
 		RunE: func(_ *cobra.Command, args []string) error {
 			c, mode, err := a.client(o)
 			if err != nil {

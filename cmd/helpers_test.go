@@ -25,13 +25,21 @@ type fakeMCP struct {
 	AuthSeen string
 	Reply    string // text returned by every tools/call
 	ErrText  string
+	Handler  func(p mcp.ToolCallParams) string // overrides Reply when set
+	Requests int                               // every HTTP request, any method
+	Deny     bool                              // answer 401 to everything
 }
 
 func newFakeMCP(t *testing.T) *fakeMCP {
 	t.Helper()
 	f := &fakeMCP{}
 	f.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		f.Requests++
 		f.AuthSeen = r.Header.Get("Authorization")
+		if f.Deny {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 		var req mcp.Request
 		_ = json.NewDecoder(r.Body).Decode(&req)
 		w.Header().Set("Mcp-Session-Id", "s1")
@@ -55,7 +63,11 @@ func newFakeMCP(t *testing.T) *fakeMCP {
 				write(mcp.ToolCallResult{IsError: true, Content: []mcp.Content{{Type: "text", Text: f.ErrText}}})
 				return
 			}
-			write(mcp.ToolCallResult{Content: []mcp.Content{{Type: "text", Text: f.Reply}}})
+			text := f.Reply
+			if f.Handler != nil {
+				text = f.Handler(p)
+			}
+			write(mcp.ToolCallResult{Content: []mcp.Content{{Type: "text", Text: text}}})
 		}
 	}))
 	t.Cleanup(f.Close)
@@ -69,10 +81,22 @@ func spyhop(t *testing.T, f *fakeMCP, args ...string) run {
 	return spyhopEnv(t, map[string]string{"ORCA_TOKEN": "tok-synth", "SPYHOP_MCP_URL": f.URL}, args...)
 }
 
+// spyhopIn is spyhop with stdin.
+func spyhopIn(t *testing.T, f *fakeMCP, stdin string, args ...string) run {
+	t.Helper()
+	t.Setenv("HOME", t.TempDir())
+	return runApp(t, map[string]string{"ORCA_TOKEN": "tok-synth", "SPYHOP_MCP_URL": f.URL}, stdin, args...)
+}
+
 func spyhopEnv(t *testing.T, env map[string]string, args ...string) run {
 	t.Helper()
+	return runApp(t, env, "", args...)
+}
+
+func runApp(t *testing.T, env map[string]string, stdin string, args ...string) run {
+	t.Helper()
 	var out, errb strings.Builder
-	app := &cmd.App{Out: &out, Err: &errb, Getenv: func(k string) string { return env[k] }}
+	app := &cmd.App{Out: &out, Err: &errb, In: strings.NewReader(stdin), Getenv: func(k string) string { return env[k] }}
 	code := cmd.ExitCode(app, args)
 	return run{code, out.String(), errb.String()}
 }
