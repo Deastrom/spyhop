@@ -52,7 +52,7 @@ Exit codes: 0 success, 1 error (including not found), 2 usage error,
 	root.PersistentFlags().StringVar(&o.region, "region", "", "Orca region for ORCA_TOKEN auth: us, eu, au, in, sa (default $ORCA_REGION or us)")
 	_ = root.RegisterFlagCompletionFunc("region", fixedValues("us", "eu", "au", "in", "sa"))
 	_ = root.RegisterFlagCompletionFunc("format", fixedValues("text", "json", "tsv"))
-	root.AddCommand(a.authCmd(o), a.toolsCmd(o), a.callCmd(o), a.searchCmd(o), a.alertCmd(o), a.assetCmd(o))
+	root.AddCommand(a.authCmd(o), a.toolsCmd(o), a.callCmd(o), a.searchCmd(o), a.alertCmd(o), a.assetCmd(o), a.docsCmd(o), a.cveCmd(o), a.queryCmd(o))
 	return root
 }
 

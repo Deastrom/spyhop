@@ -7,6 +7,11 @@ spyhop auth login | status | logout
 spyhop tools [name]
 spyhop call <tool> --arg key=value ... [--raw]
 spyhop search "critical alerts in progress" [--limit 5]
+spyhop asset find <name> [--limit N] [--model-type T] [--ids]
+spyhop asset alerts|attack-paths|crown-jewel <id>   # any ID asset get accepts; crown-jewel is read-only
+spyhop docs "How do I triage an alert?"
+spyhop cve CVE-2021-44228
+spyhop query <file|-> [--limit N] [--offset N] [--order-by -OrcaScore]
 spyhop alert get <id|->            # - reads IDs from stdin
 spyhop alert timeline|attack-path <id>
 spyhop alert similar <id> --by type|malware|secret [--secret-hash H]

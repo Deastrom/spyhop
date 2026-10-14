@@ -1,0 +1,41 @@
+{
+ "status": "success",
+ "data": [
+  {
+   "key": {
+    "RiskLevel": "medium"
+   },
+   "value": 151,
+   "aggregations": {}
+  },
+  {
+   "key": {
+    "RiskLevel": "critical"
+   },
+   "value": 3,
+   "aggregations": {}
+  },
+  {
+   "key": {
+    "RiskLevel": "informational"
+   },
+   "value": 2,
+   "aggregations": {}
+  },
+  {
+   "key": {
+    "RiskLevel": "low"
+   },
+   "value": 229,
+   "aggregations": {}
+  },
+  {
+   "key": {
+    "RiskLevel": "high"
+   },
+   "value": 5,
+   "aggregations": {}
+  }
+ ],
+ "total_items": 5
+}

@@ -1,0 +1,117 @@
+{
+ "cve_id": "CVE-2099-0001",
+ "detected": true,
+ "hits": [
+  {
+   "product": "p0",
+   "section": "s",
+   "vendor_ids": [
+    "V1",
+    "V2"
+   ],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p1",
+   "section": "s",
+   "vendor_ids": [],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p2",
+   "section": "s",
+   "vendor_ids": [],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p3",
+   "section": "s",
+   "vendor_ids": [],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p4",
+   "section": "s",
+   "vendor_ids": [],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p5",
+   "section": "s",
+   "vendor_ids": [
+    "V2",
+    "V3"
+   ],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p6",
+   "section": "s",
+   "vendor_ids": [],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p7",
+   "section": "s",
+   "vendor_ids": [],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p8",
+   "section": "s",
+   "vendor_ids": [],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p9",
+   "section": "s",
+   "vendor_ids": [],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p10",
+   "section": "s",
+   "vendor_ids": [],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p11",
+   "section": "s",
+   "vendor_ids": [],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p0",
+   "section": "s",
+   "vendor_ids": [],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p1",
+   "section": "s",
+   "vendor_ids": [],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  },
+  {
+   "product": "p2",
+   "section": "s",
+   "vendor_ids": [],
+   "patched_versions": [],
+   "vulnerable_versions": []
+  }
+ ]
+}

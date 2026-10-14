@@ -1,4 +1,4 @@
-{"status":"success","data":[{"id":"00000000-0000-0000-0000-0000000000a1","type":"AwsEc2Instance","name":"synthetic-vm-01","ui_url":"https://app.example.invalid/inventory/a1","data":{
+{"status":"success","data":[{"id":"00000000-0000-0000-0000-0000000000a1","type":"AwsEc2Instance","name":"synthetic-vm-01","group_unique_id":"vm_synthetic_group_1","asset_unique_id":"vm_synthetic_1","ui_url":"https://app.example.invalid/inventory/a1","data":{
 "Name":{"value":"synthetic-vm-01"},
 "Type":{"value":"AwsEc2Instance"},
 "RiskLevel":{"value":"critical"},

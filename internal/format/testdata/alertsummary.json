@@ -1,0 +1,28 @@
+{
+ "status": "success",
+ "total_items": 191,
+ "data": [
+  {
+   "name": "orca-1",
+   "type": "Alert",
+   "alert_title": "Title one",
+   "alert_type": "t",
+   "alert_source": "Orca Scan",
+   "risk_level": "critical",
+   "status": "open",
+   "orca_score": 10.0,
+   "ui_url": "https://app.example.invalid/alerts/orca-1"
+  },
+  {
+   "name": "orca-2",
+   "type": "Alert",
+   "alert_title": "Title two",
+   "alert_type": "t",
+   "alert_source": "Orca Scan",
+   "risk_level": "high",
+   "status": "in_progress",
+   "orca_score": 7.5,
+   "ui_url": "https://app.example.invalid/alerts/orca-2"
+  }
+ ]
+}

@@ -9,8 +9,9 @@ import (
 
 // Record is one envelope item with its {value:X} fields already unwrapped.
 type Record struct {
-	ID, Type, Name, UIURL string
-	Fields                map[string]any
+	ID, Type, Name, UIURL        string
+	GroupUniqueID, AssetUniqueID string // top-level identifiers, when present
+	Fields                       map[string]any
 }
 
 // Envelope is the shape shared by every Orca MCP tool response.
@@ -24,11 +25,13 @@ type Envelope struct {
 func ParseEnvelope(text string) (*Envelope, error) {
 	var raw struct {
 		Data []struct {
-			ID    string         `json:"id"`
-			Type  string         `json:"type"`
-			Name  string         `json:"name"`
-			UIURL string         `json:"ui_url"`
-			Data  map[string]any `json:"data"`
+			ID      string         `json:"id"`
+			Type    string         `json:"type"`
+			Name    string         `json:"name"`
+			UIURL   string         `json:"ui_url"`
+			GroupID string         `json:"group_unique_id"`
+			AssetID string         `json:"asset_unique_id"`
+			Data    map[string]any `json:"data"`
 		} `json:"data"`
 		Total  int    `json:"total_items"`
 		AppURL string `json:"app_url"`
@@ -42,7 +45,11 @@ func ParseEnvelope(text string) (*Envelope, error) {
 		for k, v := range d.Data {
 			fields[k] = Unwrap(v)
 		}
-		env.Records = append(env.Records, Record{ID: d.ID, Type: d.Type, Name: d.Name, UIURL: d.UIURL, Fields: fields})
+		env.Records = append(env.Records, Record{ID: d.ID, Type: d.Type, Name: d.Name, UIURL: d.UIURL,
+			GroupUniqueID: d.GroupID, AssetUniqueID: d.AssetID, Fields: fields})
+	}
+	if env.Total == 0 {
+		env.Total = len(env.Records) // some tools return total_items: null
 	}
 	return env, nil
 }
@@ -192,8 +199,13 @@ func ID(r Record) string {
 	if r.Type == "Alert" {
 		key = "AlertId"
 	}
-	s, _ := r.Fields[key].(string)
-	return s
+	if s, _ := r.Fields[key].(string); s != "" {
+		return s
+	}
+	if r.Type != "Alert" {
+		return r.AssetUniqueID
+	}
+	return ""
 }
 
 // JSON renders the fields as one compact object, keeping their order.

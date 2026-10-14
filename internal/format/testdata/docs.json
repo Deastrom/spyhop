@@ -1,0 +1,14 @@
+{
+ "answer": "Open the Alerts page and review each alert.",
+ "question": "How do I triage an alert?",
+ "sources": [
+  {
+   "name": "Alerts Page",
+   "link": "https://docs.example.invalid/alerts"
+  },
+  {
+   "name": "Triage Agent",
+   "link": "https://docs.example.invalid/triage"
+  }
+ ]
+}

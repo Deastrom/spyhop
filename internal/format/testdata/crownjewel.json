@@ -1,0 +1,11 @@
+{
+ "is_crown_jewel": true,
+ "details": {
+  "source": "auto_detected",
+  "auto_detected_details": {
+   "detected_crown_jewel_score": 75,
+   "detected_crown_jewel_reason": "Sensitive Data"
+  },
+  "manual_crown_jewel_details": null
+ }
+}

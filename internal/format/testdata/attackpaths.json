@@ -1,0 +1,31 @@
+{
+ "status": "success",
+ "total_items": 2,
+ "data": [
+  {
+   "id": "ap-1",
+   "type": "AttackPath",
+   "ui_url": "https://app.example.invalid/ap-1",
+   "involved_assets": [
+    {
+     "uuid": "u1",
+     "id": "vm_x",
+     "name": "web-1",
+     "type": "AwsEc2Instance",
+     "is_target": false
+    },
+    {
+     "uuid": "u2",
+     "id": "db_1",
+     "name": "db-1",
+     "type": "AwsRdsDbInstance",
+     "is_target": true
+    }
+   ],
+   "story": [
+    "An adversary can compromise [inventory||web-1||vm_x] due to [alert||Unpatched OS||orca-9]",
+    "Second sentence."
+   ]
+  }
+ ]
+}

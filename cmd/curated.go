@@ -252,6 +252,6 @@ func (a *App) assetCmd(o *opts) *cobra.Command {
 			}
 		}, format.Asset)
 	get.Flags().StringVar(&modelType, "model-type", "", "Asset model type, e.g. AwsEc2Instance (default Inventory)")
-	c.AddCommand(get)
+	c.AddCommand(get, a.assetFindCmd(o), a.assetAlertsCmd(o), a.assetAttackPathsCmd(o), a.assetCrownJewelCmd(o))
 	return c
 }

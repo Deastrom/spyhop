@@ -1,0 +1,45 @@
+{
+ "status": "success",
+ "data": [
+  {
+   "id": "00000000-0000-0000-0000-000000000001",
+   "type": "AwsEc2Instance",
+   "name": "web-1",
+   "asset_unique_id": "vm_synth_1",
+   "group_unique_id": "vm_synth_1",
+   "ui_url": "https://app.example.invalid/inventory/1",
+   "data": {
+    "Name": {
+     "value": "web-1"
+    },
+    "RiskLevel": {
+     "value": "critical"
+    },
+    "AssetUniqueId": {
+     "value": "vm_synth_1"
+    }
+   }
+  },
+  {
+   "id": "00000000-0000-0000-0000-000000000002",
+   "type": "AwsEc2Instance",
+   "name": "web-2",
+   "asset_unique_id": "vm_synth_2",
+   "group_unique_id": "vm_synth_2",
+   "ui_url": "https://app.example.invalid/inventory/2",
+   "data": {
+    "Name": {
+     "value": "web-2"
+    },
+    "RiskLevel": {
+     "value": "high"
+    },
+    "AssetUniqueId": {
+     "value": "vm_synth_2"
+    }
+   }
+  }
+ ],
+ "count": null,
+ "total_items": null
+}
