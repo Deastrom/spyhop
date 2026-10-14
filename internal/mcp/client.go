@@ -48,7 +48,7 @@ type Client struct {
 func New(authHeader, baseURL string) *Client {
 	return &Client{
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 120 * time.Second, // discovery_search can run past 30s
 		},
 		authHeader: authHeader,
 		baseURL:    baseURL,
