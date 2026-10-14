@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -317,4 +318,40 @@ func TestNoCrownJewelMarkCommand(t *testing.T) {
 	}{false, 2, 0}); got != want {
 		t.Fatalf("got %+v", got)
 	}
+}
+
+func TestDocsStripsHTMLFromAnswer(t *testing.T) {
+	const html = `<p>Use <b>labels</b> &amp; tags</p>`
+	reply := `{"answer":` + jsonString(html) + `,"question":"x","sources":[{"name":"Alerts Page","link":"https://docs.example.invalid/alerts"}]}`
+	f := newFakeMCP(t)
+	f.Reply = reply
+	text := spyhop(t, f, "docs", "x")
+	asJSON := spyhop(t, f, "docs", "x", "--json")
+	raw := spyhop(t, f, "docs", "x", "--raw")
+	// --json is compared decoded: encoding/json escapes & as \u0026.
+	var decoded struct {
+		Answer  string   `json:"answer"`
+		Sources []string `json:"sources"`
+	}
+	jsonErr := json.Unmarshal([]byte(asJSON.Out), &decoded)
+	asJSON.Out = ""
+	got := []run{text, asJSON, raw}
+	want := []run{
+		{0, "Use labels & tags\nsource: Alerts Page https://docs.example.invalid/alerts\n", ""},
+		{0, "", ""},
+		{0, reply + "\n", ""},
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("variant %d: got %+v, want %+v", i, got[i], want[i])
+		}
+	}
+	if jsonErr != nil || decoded.Answer != "Use labels & tags" || len(decoded.Sources) != 1 || decoded.Sources[0] != "Alerts Page https://docs.example.invalid/alerts" {
+		t.Fatalf("--json: got %+v (err=%v)", decoded, jsonErr)
+	}
+}
+
+func jsonString(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
 }

@@ -3,6 +3,7 @@ package format
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"regexp"
 	"sort"
 	"strings"
@@ -247,4 +248,27 @@ func (s CVESummary) JSON() string {
 		c = append(c, Field{"vendor_ids", s.VendorIDs})
 	}
 	return c.JSON()
+}
+
+var (
+	// breakTag matches tags that end a line: closing block elements, <br>, and
+	// the opening of list items and headings.
+	breakTag   = regexp.MustCompile(`(?i)</(p|div|li|ul|ol|tr|h[1-6]|pre|blockquote|table)\s*>|<br\s*/?>|<(li|h[1-6])(\s[^>]*)?>`)
+	anyTag     = regexp.MustCompile(`<[^>]*>`)
+	spaceRun   = regexp.MustCompile(`[ \t\r\f\v]+`)
+	newlineRun = regexp.MustCompile(` *\n[ \n]*`)
+)
+
+// StripHTML reduces an HTML fragment to plain text: tags are removed (block
+// ends become newlines), entities decoded, and whitespace collapsed to single
+// spaces and single newlines. Tags go first, so escaped markup such as
+// `&lt;b&gt;` survives as literal text.
+func StripHTML(s string) string {
+	s = breakTag.ReplaceAllString(s, "\n")
+	s = anyTag.ReplaceAllString(s, "")
+	s = html.UnescapeString(s)
+	s = strings.ReplaceAll(s, "\u00a0", " ")
+	s = spaceRun.ReplaceAllString(s, " ")
+	s = newlineRun.ReplaceAllString(s, "\n")
+	return strings.TrimSpace(s)
 }

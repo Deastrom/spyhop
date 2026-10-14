@@ -34,6 +34,14 @@ func (a *App) docsCmd(o *opts) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			answer = format.StripHTML(answer)
+			if o.json || o.format == "json" {
+				if sources == nil {
+					sources = []string{}
+				}
+				fmt.Fprintln(a.Out, format.Curated{{Key: "answer", Value: answer}, {Key: "sources", Value: sources}}.JSON())
+				return nil
+			}
 			fmt.Fprintln(a.Out, answer)
 			for _, s := range sources {
 				fmt.Fprintf(a.Out, "source: %s\n", s)
