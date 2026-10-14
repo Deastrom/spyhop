@@ -1,6 +1,6 @@
 # spyhop
 
-Context-lean CLI that proxies the [Orca Security MCP server](https://mcp.orcasecurity.io/) for agents calling it through bash.
+Context-lean CLI that proxies the Orca Security MCP server (`mcp.orcasecurity.io`) for agents calling it through bash.
 
 ```
 spyhop auth login | status | logout
