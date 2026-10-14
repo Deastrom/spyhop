@@ -20,14 +20,15 @@ type run struct {
 // onCall returns the tool result text (isError when errText is non-empty).
 type fakeMCP struct {
 	*httptest.Server
-	Tools    []mcp.Tool
-	Calls    []mcp.ToolCallParams
-	AuthSeen string
-	Reply    string // text returned by every tools/call
-	ErrText  string
-	Handler  func(p mcp.ToolCallParams) string // overrides Reply when set
-	Requests int                               // every HTTP request, any method
-	Deny     bool                              // answer 401 to everything
+	Tools     []mcp.Tool
+	Calls     []mcp.ToolCallParams
+	AuthSeen  string
+	Reply     string // text returned by every tools/call
+	ErrText   string
+	Handler   func(p mcp.ToolCallParams) string // overrides Reply when set
+	Requests  int                               // every HTTP request, any method
+	ListCalls int                               // tools/list requests
+	Deny      bool                              // answer 401 to everything
 }
 
 func newFakeMCP(t *testing.T) *fakeMCP {
@@ -53,6 +54,7 @@ func newFakeMCP(t *testing.T) *fakeMCP {
 		case "notifications/initialized":
 			w.WriteHeader(http.StatusAccepted)
 		case "tools/list":
+			f.ListCalls++
 			write(mcp.ToolsListResult{Tools: f.Tools})
 		case "tools/call":
 			b, _ := json.Marshal(req.Params)

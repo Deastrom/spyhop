@@ -422,3 +422,6 @@ func TextContent(r *ToolCallResult) string {
 	}
 	return sb.String()
 }
+
+// SetTimeout bounds each HTTP round trip. Call before use.
+func (c *Client) SetTimeout(d time.Duration) { c.httpClient.Timeout = d }

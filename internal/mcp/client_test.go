@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Deastrom/spyhop/internal/mcp"
 )
@@ -325,5 +326,15 @@ func TestRetryOn503(t *testing.T) {
 	}
 	if attempts != 2 {
 		t.Errorf("expected 2 attempts, got %d", attempts)
+	}
+}
+
+func TestSetTimeoutBoundsASlowServer(t *testing.T) {
+	_, client := makeServer(t, func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(300 * time.Millisecond)
+	})
+	client.SetTimeout(50 * time.Millisecond)
+	if _, err := client.Initialize(); err == nil {
+		t.Fatal("expected a timeout error")
 	}
 }

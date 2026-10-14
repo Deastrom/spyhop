@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/Deastrom/spyhop/internal/auth"
 	"github.com/Deastrom/spyhop/internal/mcp"
@@ -49,6 +50,8 @@ Exit codes: 0 success, 1 error (including not found), 2 usage error,
 	root.PersistentFlags().StringVar(&o.fields, "fields", "", "Comma-separated top-level fields to print, in order (get/search)")
 	root.PersistentFlags().StringVar(&o.format, "format", "", "Output format: text, json, tsv (--json is an alias for json)")
 	root.PersistentFlags().StringVar(&o.region, "region", "", "Orca region for ORCA_TOKEN auth: us, eu, au, in, sa (default $ORCA_REGION or us)")
+	_ = root.RegisterFlagCompletionFunc("region", fixedValues("us", "eu", "au", "in", "sa"))
+	_ = root.RegisterFlagCompletionFunc("format", fixedValues("text", "json", "tsv"))
 	root.AddCommand(a.authCmd(o), a.toolsCmd(o), a.callCmd(o), a.searchCmd(o), a.alertCmd(o), a.assetCmd(o))
 	return root
 }
@@ -57,6 +60,9 @@ Exit codes: 0 success, 1 error (including not found), 2 usage error,
 func ExitCode(a *App, args []string) int {
 	root := New(a)
 	root.SetArgs(args)
+	if len(args) > 0 && strings.HasPrefix(args[0], "__complete") {
+		root.SetErr(io.Discard) // completion output must stay clean
+	}
 	err := root.Execute()
 	if err == nil {
 		return 0

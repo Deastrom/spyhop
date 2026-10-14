@@ -32,7 +32,9 @@ func (a *App) callCmd(o *opts) *cobra.Command {
 			return a.printResult(o, res)
 		},
 	}
+	c.ValidArgsFunction = a.completeToolNames(o)
 	c.Flags().StringArrayVar(&kv, "arg", nil, "Tool argument key=value (value sent as JSON when it parses, else string)")
+	_ = c.RegisterFlagCompletionFunc("arg", a.completeArgKeys(o))
 	return c
 }
 

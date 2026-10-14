@@ -266,6 +266,7 @@ func (a *App) alertCmd(o *opts) *cobra.Command {
 		},
 	}
 	status.Flags().StringVar(&to, "to", "", "New status: "+strings.Join(alertStatuses, ", "))
+	_ = status.RegisterFlagCompletionFunc("to", fixedValues(alertStatuses...))
 	_ = status.MarkFlagRequired("to")
 	c.AddCommand(get, status)
 	return c

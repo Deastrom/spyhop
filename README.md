@@ -25,6 +25,16 @@ spyhop asset get <id> [--model-type AwsEc2Instance]
 spyhop search "critical alerts in progress" --ids | spyhop alert get - --fields AlertId,Title --format tsv
 ```
 
+## Finding tools and tab completion
+
+- `spyhop tools --grep alert --grep similar` keeps tools whose name or description contains every term (case-insensitive); no match exits 1.
+- The tool list is cached for 24h in `~/.cache/spyhop/tools-<hash>.json` (override the dir with `SPYHOP_CACHE_DIR`; OAuth and token modes and endpoints get separate files). `tools --refresh` refetches; `call` always talks to the server. `auth logout` removes the cache.
+- Completion covers tool names, `--arg` keys (`key=`), and the fixed values of `--to`, `--region` and `--format`. It never prompts or opens a browser, and falls back to a stale cache when the server is unreachable.
+
+```bash
+source <(spyhop completion zsh)    # or: bash, fish, powershell
+```
+
 ## Exit codes
 
 | Code | Meaning |

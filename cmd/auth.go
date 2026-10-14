@@ -75,6 +75,9 @@ func (a *App) authCmd(o *opts) *cobra.Command {
 				if err := auth.ClearTokens(); err != nil {
 					return err
 				}
+				if err := a.store().Clear(); err != nil {
+					return fmt.Errorf("clear cache: %w", err)
+				}
 				fmt.Fprintln(a.Out, "Logged out.")
 				return nil
 			},
