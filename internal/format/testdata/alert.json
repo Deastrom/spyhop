@@ -1,0 +1,15 @@
+{"status":"success","data":[{"id":"00000000-0000-0000-0000-000000000001_orca-1234","type":"Alert","name":"orca-1234","ui_url":"https://app.example.invalid/alerts/orca-1234","data":{
+"AlertId":{"value":"orca-1234"},
+"Title":{"value":"Remote code execution in synthetic-lib (CVE-2099-0001)"},
+"RiskLevel":{"value":"critical"},
+"OrcaScore":{"value":9.7},
+"Status":{"value":"in_progress"},
+"Category":{"value":"Vulnerabilities"},
+"CveIds":{"value":["CVE-2099-0001"]},
+"Labels":{"value":["fix_available","remote_code_execution"]},
+"AssetData":{"value":{"asset_name":"synthetic-vm-01","asset_type":"AwsEc2Instance","account_name":"synthetic-account","asset_tags_info_list":["Team|Synthetic","Env|Test"]}},
+"Recommendation":{"value":"Upgrade synthetic-lib to 2.0.0."},
+"Description":{"value":"A long description that curated output must not print."},
+"ScoreVector":{"value":{"AlertBaseScore":{"score":9.9,"Features":[{"score":0.5,"value":"x"}]}}},
+"RiskFindings":{"value":{"cve":{"packages":[{"package_name":"synthetic-lib-1.0.jar","non_os_package_paths":["/opt/app/lib/synthetic-lib-1.0.jar"]}]}}}
+}}],"total_items":1,"app_url":"https://app.example.invalid/discovery?data=synthetic"}

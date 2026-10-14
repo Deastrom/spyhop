@@ -1,0 +1,424 @@
+package mcp
+
+import (
+	"bufio"
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+)
+
+const (
+	protocolVersion = "2025-03-26"
+
+	// supportedProtocols lists the protocol versions this client understands.
+	// The server's version must match one of these.
+	supportedProtocols = "2025-03-26"
+)
+
+// Version is injected at build time via -ldflags. Defaults to "dev".
+var Version = "dev"
+
+// ErrUnauthorized is returned on HTTP 401; the caller decides whether to refresh.
+var ErrUnauthorized = errors.New("unauthorized")
+
+// Client makes JSON-RPC calls to a Streamable HTTP MCP endpoint.
+// It is safe for concurrent use after initialization.
+type Client struct {
+	httpClient *http.Client
+	authHeader string
+	baseURL    string
+
+	// idSeq is incremented atomically; each call gets a unique ID.
+	idSeq atomic.Int64
+
+	mu          sync.Mutex
+	sessionID   string // Mcp-Session-Id returned by initialize
+	initialized bool   // true after initialize + notifications/initialized sent
+}
+
+// New creates an MCP client for the given Authorization header value
+// (sent verbatim, e.g. "Bearer x" or "Token x") and endpoint URL.
+func New(authHeader, baseURL string) *Client {
+	return &Client{
+		httpClient: &http.Client{
+			Timeout: 30 * time.Second,
+		},
+		authHeader: authHeader,
+		baseURL:    baseURL,
+	}
+}
+
+func (c *Client) nextID() int64 {
+	return c.idSeq.Add(1)
+}
+
+func (c *Client) getSessionID() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.sessionID
+}
+
+func (c *Client) setSessionID(sid string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.sessionID = sid
+}
+
+// do executes a JSON-RPC request and returns the response.
+// For notifications (req.ID == nil) a nil response is returned on success.
+// It retries once on 429/503 with a short backoff.
+func (c *Client) do(req Request) (*Response, error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+
+	var (
+		rpcResp *Response
+		lastErr error
+	)
+	for attempt := range 2 {
+		if attempt > 0 {
+			time.Sleep(2 * time.Second)
+		}
+		rpcResp, lastErr = c.doOnce(body, req.ID)
+		if lastErr == nil {
+			return rpcResp, nil
+		}
+		// Only retry on retryable sentinel errors wrapped by doOnce.
+		if !isRetryable(lastErr) {
+			return nil, lastErr
+		}
+	}
+	return nil, lastErr
+}
+
+// retryableSentinel marks an error as safe to retry.
+type retryableSentinel struct{ err error }
+
+func (e *retryableSentinel) Error() string { return e.err.Error() }
+func (e *retryableSentinel) Unwrap() error { return e.err }
+
+func isRetryable(err error) bool {
+	var r *retryableSentinel
+	return err != nil && func() bool {
+		e := err
+		for e != nil {
+			if _, ok := e.(*retryableSentinel); ok {
+				return true
+			}
+			_ = r
+			type unwrapper interface{ Unwrap() error }
+			if u, ok := e.(unwrapper); ok {
+				e = u.Unwrap()
+			} else {
+				break
+			}
+		}
+		return false
+	}()
+}
+
+// maxErrorBodyBytes caps how much of an error response body is echoed back
+// to the user. Prevents dumping multi-KB HTML (e.g. WAF challenge pages)
+// into the terminal.
+const maxErrorBodyBytes = 512
+
+// readErrorBody reads up to maxErrorBodyBytes of resp.Body for use in an
+// error message, appending an ellipsis if the body was truncated.
+func readErrorBody(resp *http.Response) string {
+	b, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes+1))
+	if len(b) > maxErrorBodyBytes {
+		return string(b[:maxErrorBodyBytes]) + "…"
+	}
+	return string(b)
+}
+
+// doOnce performs a single HTTP round-trip and returns a *Response or error.
+// It returns *retryableSentinel for 429/503 so the caller can retry.
+func (c *Client) doOnce(body []byte, reqID any) (*Response, error) {
+	httpReq, err := http.NewRequest(http.MethodPost, c.baseURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("build request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "application/json, text/event-stream")
+	httpReq.Header.Set("Authorization", c.authHeader)
+	if sid := c.getSessionID(); sid != "" {
+		httpReq.Header.Set("Mcp-Session-Id", sid)
+	}
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("http: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Capture session ID from any response.
+	if sid := resp.Header.Get("Mcp-Session-Id"); sid != "" {
+		c.setSessionID(sid)
+	}
+
+	switch resp.StatusCode {
+	case http.StatusUnauthorized:
+		return nil, ErrUnauthorized
+	case http.StatusAccepted:
+		// Valid response for notifications (no body).
+		return nil, nil
+	case http.StatusTooManyRequests, http.StatusServiceUnavailable:
+		return nil, &retryableSentinel{fmt.Errorf("mcp http %d: %s", resp.StatusCode, readErrorBody(resp))}
+	}
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("mcp http %d: %s", resp.StatusCode, readErrorBody(resp))
+	}
+
+	// Route to SSE or JSON parser based on Content-Type.
+	ct := resp.Header.Get("Content-Type")
+	if strings.Contains(ct, "text/event-stream") {
+		return parseSSE(resp.Body, reqID)
+	}
+
+	var rpcResp Response
+	if err := json.NewDecoder(resp.Body).Decode(&rpcResp); err != nil {
+		return nil, fmt.Errorf("decode response: %w", err)
+	}
+	if rpcResp.Error != nil {
+		return nil, fmt.Errorf("rpc error %d: %s", rpcResp.Error.Code, rpcResp.Error.Message)
+	}
+	return &rpcResp, nil
+}
+
+// parseSSE reads a Server-Sent Events stream and returns the JSON-RPC response
+// whose ID matches requestID. Server-initiated notifications are skipped.
+// Uses bufio.Reader.ReadString instead of bufio.Scanner to avoid per-line size limits.
+func parseSSE(r io.Reader, requestID any) (*Response, error) {
+	reader := bufio.NewReaderSize(r, 64*1024)
+	var (
+		eventType string
+		dataLines []string
+	)
+
+	flush := func() (*Response, error) {
+		if len(dataLines) == 0 {
+			return nil, nil
+		}
+		// Only process "message" events (the default event type).
+		if eventType != "" && eventType != "message" {
+			return nil, nil
+		}
+		// Per SSE spec, join multi-line data with U+000A.
+		data := strings.Join(dataLines, "\n")
+		if data == "" || data == "[DONE]" {
+			return nil, nil
+		}
+		var rpcResp Response
+		if err := json.Unmarshal([]byte(data), &rpcResp); err != nil {
+			// Surface JSON errors rather than silently skipping.
+			return nil, fmt.Errorf("sse: malformed JSON in data field: %w", err)
+		}
+		// Skip server-initiated notifications (no ID) or mismatched IDs.
+		if requestID != nil {
+			if rpcResp.ID == nil {
+				return nil, nil
+			}
+			// Compare as JSON to handle string/number ID types.
+			wantB, _ := json.Marshal(requestID)
+			gotB, _ := json.Marshal(rpcResp.ID)
+			if string(wantB) != string(gotB) {
+				return nil, nil
+			}
+		}
+		if rpcResp.Error != nil {
+			return nil, fmt.Errorf("rpc error %d: %s", rpcResp.Error.Code, rpcResp.Error.Message)
+		}
+		return &rpcResp, nil
+	}
+
+	for {
+		line, err := reader.ReadString('\n')
+		// Trim the trailing newline(s).
+		line = strings.TrimRight(line, "\r\n")
+
+		if line == "" {
+			// Blank line = dispatch the event.
+			if err == nil || err == io.EOF {
+				resp, ferr := flush()
+				eventType = ""
+				dataLines = nil
+				if ferr != nil {
+					return nil, ferr
+				}
+				if resp != nil {
+					return resp, nil
+				}
+			}
+		} else if strings.HasPrefix(line, "event:") {
+			eventType = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
+		} else if strings.HasPrefix(line, "data:") {
+			d := strings.TrimPrefix(line, "data:")
+			if strings.HasPrefix(d, " ") {
+				d = d[1:]
+			}
+			dataLines = append(dataLines, d)
+		}
+		// id: and retry: fields are intentionally ignored.
+
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("sse read: %w", err)
+		}
+	}
+
+	// Flush any trailing event without a trailing blank line.
+	resp, err := flush()
+	if err != nil {
+		return nil, err
+	}
+	if resp != nil {
+		return resp, nil
+	}
+
+	return nil, fmt.Errorf("no matching JSON-RPC response found in SSE stream")
+}
+
+// Initialize sends the MCP initialize handshake followed by
+// notifications/initialized, as required by the spec.
+// Safe to call multiple times — subsequent calls are no-ops.
+func (c *Client) Initialize() (*InitializeResult, error) {
+	c.mu.Lock()
+	alreadyDone := c.initialized
+	c.mu.Unlock()
+	if alreadyDone {
+		return nil, nil
+	}
+
+	id := c.nextID()
+	req := Request{
+		JSONRPC: "2.0",
+		ID:      id,
+		Method:  "initialize",
+		Params: InitializeParams{
+			ProtocolVersion: protocolVersion,
+			ClientInfo:      ClientInfo{Name: "spyhop", Version: Version},
+			Capabilities:    map[string]any{},
+		},
+	}
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil {
+		return nil, fmt.Errorf("initialize: server returned 202 for a request (expected 200)")
+	}
+	var result InitializeResult
+	if err := json.Unmarshal(resp.Result, &result); err != nil {
+		return nil, fmt.Errorf("parse initialize result: %w", err)
+	}
+
+	// Validate protocol version compatibility.
+	if result.ProtocolVersion != supportedProtocols {
+		return nil, fmt.Errorf("unsupported MCP protocol version %q (client supports %q)", result.ProtocolVersion, supportedProtocols)
+	}
+
+	// Send notifications/initialized (no ID — it's a notification).
+	notif := Request{
+		JSONRPC: "2.0",
+		Method:  "notifications/initialized",
+	}
+	if _, err := c.do(notif); err != nil {
+		return nil, fmt.Errorf("send initialized notification: %w", err)
+	}
+
+	c.mu.Lock()
+	c.initialized = true
+	c.mu.Unlock()
+
+	return &result, nil
+}
+
+// ListTools returns the list of tools available from the MCP server,
+// following pagination cursors until all pages are fetched.
+func (c *Client) ListTools() ([]Tool, error) {
+	if _, err := c.Initialize(); err != nil {
+		return nil, err
+	}
+
+	var all []Tool
+	var cursor string
+	for {
+		id := c.nextID()
+		var params any
+		if cursor != "" {
+			params = map[string]any{"cursor": cursor}
+		}
+		req := Request{
+			JSONRPC: "2.0",
+			ID:      id,
+			Method:  "tools/list",
+			Params:  params,
+		}
+		resp, err := c.do(req)
+		if err != nil {
+			return nil, err
+		}
+		var result ToolsListResult
+		if err := json.Unmarshal(resp.Result, &result); err != nil {
+			return nil, fmt.Errorf("parse tools/list result: %w", err)
+		}
+		all = append(all, result.Tools...)
+		if result.NextCursor == "" {
+			break
+		}
+		cursor = result.NextCursor
+	}
+	return all, nil
+}
+
+// CallTool sends a tools/call request and returns the result.
+func (c *Client) CallTool(name string, args map[string]any) (*ToolCallResult, error) {
+	if _, err := c.Initialize(); err != nil {
+		return nil, err
+	}
+	id := c.nextID()
+	req := Request{
+		JSONRPC: "2.0",
+		ID:      id,
+		Method:  "tools/call",
+		Params: ToolCallParams{
+			Name:      name,
+			Arguments: args,
+		},
+	}
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	var result ToolCallResult
+	if err := json.Unmarshal(resp.Result, &result); err != nil {
+		return nil, fmt.Errorf("parse tools/call result: %w", err)
+	}
+	if result.IsError {
+		return nil, &ToolError{Text: TextContent(&result)}
+	}
+	return &result, nil
+}
+
+// TextContent extracts the concatenated text from a tool call result.
+func TextContent(r *ToolCallResult) string {
+	var sb bytes.Buffer
+	for _, c := range r.Content {
+		if c.Type == "text" {
+			sb.WriteString(c.Text)
+		}
+	}
+	return sb.String()
+}

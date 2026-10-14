@@ -1,0 +1,14 @@
+{"status":"success","data":[{"id":"00000000-0000-0000-0000-0000000000a1","type":"AwsEc2Instance","name":"synthetic-vm-01","ui_url":"https://app.example.invalid/inventory/a1","data":{
+"Name":{"value":"synthetic-vm-01"},
+"Type":{"value":"AwsEc2Instance"},
+"RiskLevel":{"value":"critical"},
+"OrcaScore":{"value":10},
+"State":{"value":"running"},
+"Region":{"value":"us-east-2"},
+"Exposure":{"value":"internet_facing"},
+"IsCrownJewel":{"value":true},
+"AccountName":{"value":"synthetic-account"},
+"TotalVulnerabilitiesFound":{"value":42},
+"RelatedCompliances":{"value":["Framework A","Framework B"]},
+"Tags":{"value":{"Name":"synthetic-vm-01"}}
+}}],"total_items":1}
